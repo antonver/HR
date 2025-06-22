@@ -1,0 +1,239 @@
+/*
+ * Глобальный сброс (Universal Reset)
+ * Устанавливает box-sizing для всех элементов, чтобы padding и border не увеличивали общую ширину/высоту.
+ * Это очень важно для предсказуемой работы с макетами.
+ */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+/*
+ * Сброс margin и padding для основных блочных элементов
+ * Удаляет стандартные отступы, которые браузеры добавляют к заголовкам, параграфам, спискам и т.д.
+ */
+body,
+h1, h2, h3, h4, h5, h6,
+p,
+blockquote,
+pre,
+dl,
+dd,
+ol,
+ul,
+figure,
+figcaption,
+hr {
+  margin: 0;
+  padding: 0;
+}
+
+/*
+ * Сброс стилей для списков
+ * Удаляет маркеры списка и отступы по умолчанию
+ */
+ol,
+ul {
+  list-style: none;
+}
+
+/*
+ * Наследование шрифтов для форм и элементов UI
+ * Гарантирует, что элементы форм наследуют стили шрифтов от своих родителей.
+ */
+button,
+input,
+optgroup,
+select,
+textarea {
+  font-family: inherit;
+  font-size: 100%;
+  line-height: 1.15; /* Safari fix */
+  margin: 0; /* Удаляет margin в IE/Edge */
+}
+
+/*
+ * Сброс стилей для кнопок
+ */
+button {
+  background-color: transparent;
+  padding: 0;
+  border: none;
+  cursor: pointer;
+}
+
+/*
+ * Сброс стилей для изображений
+ * Делает изображения адаптивными и убирает потенциальные отступы снизу
+ */
+img,
+picture,
+video,
+canvas,
+svg {
+  display: block; /* Убирает лишний пробел под изображениями */
+  max-width: 100%; /* Делает изображения адаптивными */
+}
+
+/*
+ * Сброс стилей для ссылок
+ * Удаляет подчеркивание по умолчанию и устанавливает наследование цвета
+ */
+a {
+  text-decoration: none;
+  color: inherit;
+}
+
+/*
+ * Сброс стилей для таблиц
+ * Убирает отступы и границы по умолчанию
+ */
+table {
+  border-collapse: collapse;
+  border-spacing: 0;
+}
+
+/*
+ * Сброс фокуса (улучшает доступность, но требует кастомизации позже)
+ * Убирает стандартную обводку фокуса. Если вы используете это, ОБЯЗАТЕЛЬНО предоставьте
+ * свои собственные стили фокуса для доступности (например, :focus-visible).
+ */
+:focus {
+  outline: none;
+}
+
+/*
+ * Основные стили для body
+ * Устанавливает базовый шрифт, цвет текста и высоту строки для всего документа.
+ */
+body {
+  line-height: 1.5; /* Улучшает читабельность */
+  -webkit-font-smoothing: antialiased; /* Сглаживание шрифтов на WebKit */
+  font-family: Inter, sans-serif; /* Пример использования шрифта Inter */
+  text-rendering: optimizeLegibility; /* Улучшает рендеринг текста */
+}
+
+/*
+ * Дополнительные стили для улучшения опыта разработки и доступности
+ */
+/* Запрет увеличения шрифта на iOS при повороте экрана */
+html {
+  -webkit-text-size-adjust: 100%;
+}
+/* Скрытие элементов, предназначенных только для скринридеров, но не из DOM */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border-width: 0;
+}
+
+.test-container {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 20px;
+  background-color: #1e1e1e;
+  color: #fff;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.login-form {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+}
+
+.input-group {
+  margin-bottom: 20px;
+  width: 100%;
+}
+
+.input-group label {
+  display: block;
+  margin-bottom: 8px;
+}
+
+.input-group input {
+  width: 100%;
+  padding: 12px;
+  border: 1px solid #444;
+  border-radius: 4px;
+  background-color: #333;
+  color: #fff;
+  font-size: 16px;
+}
+
+.question-navigation {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  margin-bottom: 30px;
+}
+
+.question-navigation button {
+  width: 40px;
+  height: 40px;
+  border: 1px solid gold;
+  background: transparent;
+  color: gold;
+  cursor: pointer;
+}
+
+.question-navigation button.active {
+  background-color: gold;
+  color: #1e1e1e;
+}
+
+.back-button {
+  align-self: flex-start;
+  background: transparent;
+  border: none;
+  color: #fff;
+  cursor: pointer;
+  font-size: 16px;
+  margin-bottom: 20px;
+}
+
+.answer-input {
+  width: 100%;
+  min-height: 120px;
+  padding: 15px;
+  margin: 20px 0;
+  background-color: #333;
+  border: 1px solid #444;
+  border-radius: 4px;
+  color: #fff;
+  font-size: 16px;
+  resize: vertical;
+}
+
+.continue-button {
+  align-self: stretch;
+  padding: 15px;
+  background-color: transparent;
+  border: 1px solid gold;
+  color: gold;
+  font-size: 18px;
+  cursor: pointer;
+  margin-top: auto;
+}
+
+.continue-button:hover {
+  background-color: gold;
+  color: #1e1e1e;
+}
+
+h2 {
+  font-size: 24px;
+  margin-bottom: 20px;
+}
