@@ -1,7 +1,6 @@
 import { Routes, Route } from 'react-router-dom';
 import StartPage from './pages/StartPage';
 import Test from './pages/Test';
-import Login from './components/Login';
 import {Box} from "@mui/material";
 
 function App() {
@@ -21,7 +20,6 @@ function App() {
         <Routes>
             <Route path="/" element={<StartPage />} />
             <Route path="/test" element={<Test />} />
-            <Route path="/login" element={<Login />} />
         </Routes>
         </Box>
     );

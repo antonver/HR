@@ -12,7 +12,6 @@ const QuestionPage = () => {
     const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
-    const username = useSelector((state) => state.login.value);
     useEffect(() => {
         const fetchQuestions = async () => {
             if (!typeTest || !['frontend', 'backend'].includes(typeTest)) {
@@ -72,7 +71,7 @@ const QuestionPage = () => {
             }));
             try {
                 console.log('Отправляем ответы:', allAnswers);
-                await postAnswers(allAnswers, username);
+                await postAnswers(allAnswers);
                 alert('Ответы успешно отправлены!');
                 setCurrentQuestionIndex(0);
                 setQuestions([]);

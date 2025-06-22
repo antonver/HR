@@ -12,7 +12,7 @@ const StartPage = () => {
         try {
             dispatch(changeType('frontend'));
             await getQuestionsFront(); // Optional pre-fetch
-            navigate('/login');
+            navigate('/test');
         } catch (error) {
             console.error('Ошибка при загрузке вопросов для Frontend:', error);
             alert('Не удалось загрузить вопросы для Frontend. Попробуйте снова.');
@@ -23,7 +23,7 @@ const StartPage = () => {
         try {
             dispatch(changeType('backend'));
             await getQuestionsBack(); // Optional pre-fetch
-            navigate('/login');
+            navigate('/test');
         } catch (error) {
             console.error('Ошибка при загрузке вопросов для Backend:', error);
             alert('Не удалось загрузить вопросы для Backend. Попробуйте снова.');
