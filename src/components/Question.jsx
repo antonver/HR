@@ -1,6 +1,7 @@
 import { useDispatch, useSelector } from 'react-redux';
 import { addAnswer } from '../store/slices/answersSlice';
-import { Button, TextField, Box, Typography } from '@mui/material';
+import { clearType } from '../store/slices/testSlice'; // Импортируем clearTestType
+import { Button, TextField, Box, Typography, CircularProgress } from '@mui/material';
 import { useState, useEffect } from 'react';
 import { getQuestionsBack, getQuestionsFront, postAnswers } from '../utils/get_info.js';
 
@@ -12,10 +13,11 @@ const QuestionPage = () => {
     const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
+
     useEffect(() => {
         const fetchQuestions = async () => {
             if (!typeTest || !['frontend', 'backend'].includes(typeTest)) {
-                setError('Invalid test type selected.');
+                setError('Type de test invalide sélectionné.');
                 setLoading(false);
                 return;
             }
@@ -28,11 +30,11 @@ const QuestionPage = () => {
                 } else {
                     data = await getQuestionsBack();
                 }
-                console.log('Получены вопросы:', data);
+                console.log('Questions reçues:', data);
                 setQuestions(Array.isArray(data) ? data : []);
             } catch (error) {
-                console.error('Ошибка при получении вопросов:', error);
-                setError('Failed to fetch questions. Please try again later.');
+                console.error('Erreur lors de la récupération des questions:', error);
+                setError('Échec du chargement des questions. Veuillez réessayer plus tard.');
             } finally {
                 setLoading(false);
             }
@@ -41,23 +43,30 @@ const QuestionPage = () => {
     }, [typeTest]);
 
     if (loading) {
-        return <Typography color="primary">Loading questions...</Typography>;
+        return (
+            <Box sx={{ display: 'flex', justifyContent: 'center', mt: 5 }}>
+                <CircularProgress color="primary" />
+                <Typography sx={{ ml: 2 }}>Chargement des questions...</Typography>
+            </Box>
+        );
     }
+
     if (error) {
         return <Typography color="error">{error}</Typography>;
     }
+
     if (!questions || questions.length === 0) {
-        return <Typography color="error">No questions available.</Typography>;
+        return <Typography color="error">Aucune question disponible.</Typography>;
     }
 
     const currentQuestion = questions[currentQuestionIndex];
 
     if (!currentQuestion || currentQuestionIndex >= questions.length) {
-        return <Typography color="error">No more questions available.</Typography>;
+        return <Typography color="error">Plus de questions disponibles.</Typography>;
     }
 
     const currentAnswer = answers.find(
-        (ans) => ans.test_num === currentQuestion.test_num && ans.question_num === currentQuestion.question_num
+        (ans) => ans.question_id === currentQuestion.id && ans.test_id === currentQuestion.test_id
     )?.answer || '';
 
     const handleNext = async () => {
@@ -65,20 +74,20 @@ const QuestionPage = () => {
             setCurrentQuestionIndex(currentQuestionIndex + 1);
         } else {
             const allAnswers = answers.map((ans) => ({
-                test_num: ans.test_num,
-                question_num: ans.question_num,
+                test_id: ans.test_id,
+                question_id: ans.question_id,
                 answer: ans.answer,
             }));
             try {
-                console.log('Отправляем ответы:', allAnswers);
+                console.log('Envoi des réponses:', allAnswers);
                 await postAnswers(allAnswers);
-                alert('Ответы успешно отправлены!');
+                alert('Réponses envoyées avec succès!');
                 setCurrentQuestionIndex(0);
                 setQuestions([]);
-                dispatch(clearType()); // Clear test type after submission
+                dispatch(clearType()); // Effacer le type de test après soumission
             } catch (error) {
-                console.error('Ошибка при отправке ответов:', error);
-                alert('Не удалось отправить ответы. Пожалуйста, попробуйте снова.');
+                console.error('Erreur lors de l\'envoi des réponses:', error);
+                alert('Échec de l\'envoi des réponses. Veuillez réessayer.');
             }
         }
     };
@@ -91,11 +100,10 @@ const QuestionPage = () => {
 
     const handleAnswerChange = (e) => {
         const value = e.target.value;
-        console.log('Введенный ответ:', value);
         dispatch(
             addAnswer({
-                test_num: currentQuestion.test_num,
-                question_num: currentQuestion.question_num,
+                test_id: currentQuestion.test_id,
+                question_id: currentQuestion.id,
                 answer: value,
             })
         );
@@ -107,16 +115,17 @@ const QuestionPage = () => {
                 display: 'flex',
                 flexDirection: 'column',
                 alignItems: 'center',
-                justifyContent: 'center',
-                height: '100vh',
+                p: 3,
+                minHeight: '100vh',
                 bgcolor: '#1a1a1a',
                 color: '#fff',
             }}
         >
-            <Box sx={{ display: 'flex', gap: 1, mb: 2 }}>
-                {[...Array(questions.length)].map((_, i) => (
+            <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, mb: 3, justifyContent: 'center' }}>
+                {questions.map((_, i) => (
                     <Box
                         key={i}
+                        onClick={() => setCurrentQuestionIndex(i)}
                         sx={{
                             width: 32,
                             height: 32,
@@ -125,34 +134,42 @@ const QuestionPage = () => {
                             alignItems: 'center',
                             justifyContent: 'center',
                             bgcolor: i === currentQuestionIndex ? '#facc15' : 'transparent',
+                            color: i === currentQuestionIndex ? '#1a1a1a' : '#facc15',
+                            cursor: 'pointer',
+                            '&:hover': {
+                                opacity: 0.8,
+                            },
                         }}
                     >
                         {i + 1}
                     </Box>
                 ))}
             </Box>
+
             <Button
                 onClick={handleBack}
                 sx={{ color: '#facc15', mb: 2, alignSelf: 'flex-start' }}
-                aria-label="Go back"
                 disabled={currentQuestionIndex === 0}
             >
-                ← Back
+                ← Retour
             </Button>
-            <Typography variant="h6" sx={{ mb: 2 }}>
-                {currentQuestion.question}
+
+            <Typography variant="h6" sx={{ mb: 3, maxWidth: '600px', textAlign: 'center' }}>
+                {currentQuestion.question_text}
             </Typography>
+
             <TextField
                 variant="outlined"
-                placeholder="Введите ваш ответ"
+                placeholder="Tapez votre réponse ici..."
                 value={currentAnswer}
                 onChange={handleAnswerChange}
                 multiline
-                rows={4}
+                rows={6}
                 fullWidth
                 sx={{
-                    mb: 2,
-                    width: 400,
+                    mb: 3,
+                    width: '100%',
+                    maxWidth: '600px',
                     '& .MuiOutlinedInput-root': {
                         '& fieldset': { borderColor: '#4b5563' },
                         '&:hover fieldset': { borderColor: '#6b7280' },
@@ -161,22 +178,22 @@ const QuestionPage = () => {
                         color: '#fff',
                     },
                     '& .MuiInputBase-input': { color: '#fff' },
-                    '& .MuiInputLabel-root': { color: '#9ca3af' },
                 }}
             />
+
             <Button
                 variant="contained"
                 sx={{
                     bgcolor: '#facc15',
                     color: '#1a1a1a',
-                    width: 256,
+                    minWidth: 200,
                     '&:hover': { bgcolor: '#e0ab0e' },
+                    '&:disabled': { bgcolor: '#4b5563', color: '#9ca3af' }
                 }}
                 onClick={handleNext}
                 disabled={currentAnswer.trim() === ''}
-                aria-label={currentQuestionIndex === questions.length - 1 ? 'Finish and submit' : 'Continue to next question'}
             >
-                {currentQuestionIndex === questions.length - 1 ? 'Finish' : 'Continue'}
+                {currentQuestionIndex === questions.length - 1 ? 'Terminer' : 'Continuer'}
             </Button>
         </Box>
     );
