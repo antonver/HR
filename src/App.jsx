@@ -1,7 +1,10 @@
 import { Routes, Route } from 'react-router-dom';
-import StartPage from './pages/StartPage';
+import StartPage from './pages/Front.jsx';
 import Test from './pages/Test';
 import {Box} from "@mui/material";
+import Front from "./pages/Front.jsx";
+import Back from "./pages/Back.jsx";
+import ThankYouPage from "./pages/ThankYouPage.jsx";
 
 function App() {
     return ( <Box
@@ -19,7 +22,10 @@ function App() {
     >
         <Routes>
             <Route path="/" element={<StartPage />} />
+            <Route path="/frontend" element={<Front />} />
+            <Route path="/backend" element={<Back />} />
             <Route path="/test" element={<Test />} />
+            <Route path="/end" element={<ThankYouPage />} />
         </Routes>
         </Box>
     );

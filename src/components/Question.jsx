@@ -1,40 +1,39 @@
 import { useDispatch, useSelector } from 'react-redux';
-import { addAnswer } from '../store/slices/answersSlice';
-import { clearType } from '../store/slices/testSlice'; // Импортируем clearTestType
+import { addAnswer, clearAnswers } from '../store/slices/answersSlice';
 import { Button, TextField, Box, Typography, CircularProgress } from '@mui/material';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { getQuestionsBack, getQuestionsFront, postAnswers } from '../utils/get_info.js';
+import {useNavigate} from "react-router-dom";
+import {increment} from "../store/slices/counterSlice.js";
 
 const QuestionPage = () => {
     const dispatch = useDispatch();
+    const navigate = useNavigate();
     const answers = useSelector((state) => state.answers);
     const typeTest = useSelector((state) => state.test.typeTest);
+    const count = useSelector((state) => state.counter);
     const [questions, setQuestions] = useState([]);
     const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
     const [loading, setLoading] = useState(true);
-    const [error, setError] = useState(null);
+    const [errorMsg, setErrorMsg] = useState(null);
+    const [timeSpent, setTimeSpent] = useState(0);
+    const [totalTimeSpent, setTotalTimeSpent] = useState(0);
 
     useEffect(() => {
         const fetchQuestions = async () => {
             if (!typeTest || !['frontend', 'backend'].includes(typeTest)) {
-                setError('Type de test invalide sélectionné.');
+                setErrorMsg('Invalid test type.');
                 setLoading(false);
                 return;
             }
 
             setLoading(true);
             try {
-                let data;
-                if (typeTest === 'frontend') {
-                    data = await getQuestionsFront();
-                } else {
-                    data = await getQuestionsBack();
-                }
-                console.log('Questions reçues:', data);
+                const data = typeTest === 'frontend' ? await getQuestionsFront() : await getQuestionsBack();
                 setQuestions(Array.isArray(data) ? data : []);
             } catch (error) {
-                console.error('Erreur lors de la récupération des questions:', error);
-                setError('Échec du chargement des questions. Veuillez réessayer plus tard.');
+                setErrorMsg('Failed to load questions.');
+                console.error('Error loading questions:', error);
             } finally {
                 setLoading(false);
             }
@@ -42,72 +41,124 @@ const QuestionPage = () => {
         fetchQuestions();
     }, [typeTest]);
 
-    if (loading) {
-        return (
-            <Box sx={{ display: 'flex', justifyContent: 'center', mt: 5 }}>
-                <CircularProgress color="primary" />
-                <Typography sx={{ ml: 2 }}>Chargement des questions...</Typography>
-            </Box>
-        );
-    }
+    const handleNext = useCallback(async () => {
+        if (!questions.length) return;
 
-    if (error) {
-        return <Typography color="error">{error}</Typography>;
-    }
+        const currentQuestion = questions[currentQuestionIndex];
+        const currentAnswer = answers.find(
+            (ans) => ans.question_id === currentQuestion.id && ans.test_id === currentQuestion.test_id
+        )?.answer || '';
 
-    if (!questions || questions.length === 0) {
-        return <Typography color="error">Aucune question disponible.</Typography>;
-    }
-
-    const currentQuestion = questions[currentQuestionIndex];
-
-    if (!currentQuestion || currentQuestionIndex >= questions.length) {
-        return <Typography color="error">Plus de questions disponibles.</Typography>;
-    }
-
-    const currentAnswer = answers.find(
-        (ans) => ans.question_id === currentQuestion.id && ans.test_id === currentQuestion.test_id
-    )?.answer || '';
-
-    const handleNext = async () => {
-        if (currentQuestionIndex < questions.length - 1) {
-            setCurrentQuestionIndex(currentQuestionIndex + 1);
-        } else {
-            const allAnswers = answers.map((ans) => ({
-                test_id: ans.test_id,
-                question_id: ans.question_id,
-                answer: ans.answer,
-            }));
-            try {
-                console.log('Envoi des réponses:', allAnswers);
-                await postAnswers(allAnswers);
-                alert('Réponses envoyées avec succès!');
-                setCurrentQuestionIndex(0);
-                setQuestions([]);
-                dispatch(clearType()); // Effacer le type de test après soumission
-            } catch (error) {
-                console.error('Erreur lors de l\'envoi des réponses:', error);
-                alert('Échec de l\'envoi des réponses. Veuillez réessayer.');
-            }
-        }
-    };
-
-    const handleBack = () => {
-        if (currentQuestionIndex > 0) {
-            setCurrentQuestionIndex(currentQuestionIndex - 1);
-        }
-    };
-
-    const handleAnswerChange = (e) => {
-        const value = e.target.value;
+        setTotalTimeSpent((prev) => prev + timeSpent);
         dispatch(
             addAnswer({
                 test_id: currentQuestion.test_id,
                 question_id: currentQuestion.id,
-                answer: value,
+                answer: currentAnswer,
+                time_spent: timeSpent,
+            })
+        );
+
+        if (currentQuestionIndex < questions.length - 1) {
+            setCurrentQuestionIndex(currentQuestionIndex + 1);
+            setTimeSpent(0);
+        } else {
+            const updatedAnswers = [...answers];
+
+            const isCurrentAnswerAlreadyAdded = answers.some(
+                (ans) =>
+                    ans.question_id === currentQuestion.id &&
+                    ans.test_id === currentQuestion.test_id
+            );
+
+            if (!isCurrentAnswerAlreadyAdded) {
+                updatedAnswers.push({
+                    test_id: currentQuestion.test_id,
+                    question_id: currentQuestion.id,
+                    answer: currentAnswer,
+                    time_spent: timeSpent,
+                });
+            }
+
+            const payload = {
+                test_id: currentQuestion.test_id,
+                answers: updatedAnswers.map((ans) => ({
+                    answer_text: ans.answer,
+                    time_spent: ans.time_spent,
+                    question_id: ans.question_id,
+                })),
+                total_time: updatedAnswers.reduce((sum, ans) => sum + ans.time_spent, 0),
+            };
+
+            console.log('Sending answers payload:', JSON.stringify(payload, null, 2));
+
+            try {
+                await postAnswers(payload);
+                alert('Answers submitted successfully!');
+                dispatch(clearAnswers());
+                setCurrentQuestionIndex(0);
+                dispatch(increment());
+                setQuestions([]);
+                if (count === 1) {
+                    navigate('/backend');
+                }
+                else navigate('/end');
+            } catch (error) {
+                console.error('Failed to submit answers:', error);
+                alert('Failed to submit answers.');
+            }
+        }
+    }, [currentQuestionIndex, questions, answers, dispatch, timeSpent]);
+
+    useEffect(() => {
+        const timer = setInterval(() => {
+            setTimeSpent((prev) => {
+                if (prev >= 90) {
+                    handleNext();
+                    return 0;
+                }
+                return prev + 1;
+            });
+        }, 1000);
+        return () => clearInterval(timer);
+    }, [currentQuestionIndex, handleNext]);
+
+    const handleAnswerChange = (e) => {
+        if (!questions.length) return;
+
+        const currentQuestion = questions[currentQuestionIndex];
+
+        dispatch(
+            addAnswer({
+                test_id: currentQuestion.test_id,
+                question_id: currentQuestion.id,
+                answer: e.target.value,
+                time_spent: timeSpent,
             })
         );
     };
+
+    if (loading) {
+        return (
+            <Box sx={{ display: 'flex', justifyContent: 'center', mt: 5 }}>
+                <CircularProgress color="primary" />
+                <Typography sx={{ ml: 2 }}>Loading questions...</Typography>
+            </Box>
+        );
+    }
+
+    if (errorMsg) {
+        return <Typography color="error">{errorMsg}</Typography>;
+    }
+
+    if (!questions || questions.length === 0) {
+        return <Typography color="error">No questions available.</Typography>;
+    }
+
+    const currentQuestion = questions[currentQuestionIndex];
+    const currentAnswer = answers.find(
+        (ans) => ans.question_id === currentQuestion.id && ans.test_id === currentQuestion.test_id
+    )?.answer || '';
 
     return (
         <Box
@@ -121,38 +172,32 @@ const QuestionPage = () => {
                 color: '#fff',
             }}
         >
-            <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, mb: 3, justifyContent: 'center' }}>
-                {questions.map((_, i) => (
+            <Box
+                sx={{
+                    display: 'flex',
+                    justifyContent: 'center',
+                    gap: 1,
+                    mb: 3,
+                }}
+            >
+                {questions.map((_, index) => (
                     <Box
-                        key={i}
-                        onClick={() => setCurrentQuestionIndex(i)}
+                        key={index}
                         sx={{
-                            width: 32,
-                            height: 32,
-                            border: '2px solid #facc15',
+                            width: 40,
+                            height: 40,
                             display: 'flex',
                             alignItems: 'center',
                             justifyContent: 'center',
-                            bgcolor: i === currentQuestionIndex ? '#facc15' : 'transparent',
-                            color: i === currentQuestionIndex ? '#1a1a1a' : '#facc15',
-                            cursor: 'pointer',
-                            '&:hover': {
-                                opacity: 0.8,
-                            },
+                            bgcolor: index <= currentQuestionIndex ? '#facc15' : 'transparent',
+                            border: '1px solid #facc15',
+                            color: index <= currentQuestionIndex ? '#1a1a1a' : '#facc15',
                         }}
                     >
-                        {i + 1}
+                        {index + 1}
                     </Box>
                 ))}
             </Box>
-
-            <Button
-                onClick={handleBack}
-                sx={{ color: '#facc15', mb: 2, alignSelf: 'flex-start' }}
-                disabled={currentQuestionIndex === 0}
-            >
-                ← Retour
-            </Button>
 
             <Typography variant="h6" sx={{ mb: 3, maxWidth: '600px', textAlign: 'center' }}>
                 {currentQuestion.question_text}
@@ -160,7 +205,7 @@ const QuestionPage = () => {
 
             <TextField
                 variant="outlined"
-                placeholder="Tapez votre réponse ici..."
+                placeholder="Enter your answer..."
                 value={currentAnswer}
                 onChange={handleAnswerChange}
                 multiline
@@ -181,20 +226,24 @@ const QuestionPage = () => {
                 }}
             />
 
-            <Button
-                variant="contained"
-                sx={{
-                    bgcolor: '#facc15',
-                    color: '#1a1a1a',
-                    minWidth: 200,
-                    '&:hover': { bgcolor: '#e0ab0e' },
-                    '&:disabled': { bgcolor: '#4b5563', color: '#9ca3af' }
-                }}
-                onClick={handleNext}
-                disabled={currentAnswer.trim() === ''}
-            >
-                {currentQuestionIndex === questions.length - 1 ? 'Terminer' : 'Continuer'}
-            </Button>
+            <Box sx={{ display: 'flex', justifyContent: 'center', width: '100%', maxWidth: '600px', mt: 2 }}>
+                <Button
+                    variant="contained"
+                    sx={{
+                        bgcolor: '#facc15',
+                        color: '#1a1a1a',
+                        width: '100%',
+                        '&:hover': { bgcolor: '#e0ab0e' },
+                    }}
+                    onClick={handleNext}
+                    disabled={currentAnswer.trim() === ''}
+                >
+                    {currentQuestionIndex === questions.length - 1 ? 'Finish' : 'Continue'}
+                </Button>
+            </Box>
+
+            <Typography sx={{ mt: 2 }}>Time remaining: {90 - timeSpent} seconds</Typography>
+            <Typography sx={{ mt: 1 }}>Total time: {totalTimeSpent + timeSpent} seconds</Typography>
         </Box>
     );
 };

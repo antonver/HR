@@ -1,25 +1,27 @@
 import { createSlice } from '@reduxjs/toolkit';
 
+const initialState = [];
+
 const answersSlice = createSlice({
     name: 'answers',
-    initialState: [],
+    initialState,
     reducers: {
         addAnswer: (state, action) => {
-            const { test_num, question_num, answer } = action.payload;
-            const existingAnswerIndex = state.findIndex(
-                (ans) => ans.test_num === test_num && ans.question_num === question_num
+            const { test_id, question_id, answer, time_spent } = action.payload;
+            const existingAnswer = state.find(
+                (ans) => ans.test_id === test_id && ans.question_id === question_id
             );
-            if (existingAnswerIndex !== -1) {
-                // Update existing answer
-                state[existingAnswerIndex].answer = answer;
+
+            if (existingAnswer) {
+                // Обновляем существующий ответ
+                existingAnswer.answer = answer;
+                existingAnswer.time_spent = time_spent;
             } else {
-                // Add new answer
-                state.push(action.payload);
+                // Добавляем новый ответ
+                state.push({ test_id, question_id, answer, time_spent });
             }
         },
-        clearAnswers: (state) => {
-            return []; // Reset to empty array
-        },
+        clearAnswers: () => initialState, // Сбрасываем состояние
     },
 });
 

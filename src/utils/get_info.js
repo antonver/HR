@@ -54,7 +54,7 @@ export const getQuestionsFront = async () => {
         //         question: "Объясните, как работает кэширование на сервере."
         //     }
         //
-        const response = await api.get('/questions/frontend');
+        const response = await api.get('api/tests/1/questions');
         return response.data;
 
     } catch (error) {
@@ -65,7 +65,7 @@ export const getQuestionsFront = async () => {
 
 export const getQuestionsBack = async () => {
     try {
-        const response = await api.get('/question/backend');
+        const response = await api.get('api/tests/2/questions');
         return response.data;
         // return [
         //     {
@@ -127,8 +127,22 @@ export const getQuestionsBack = async () => {
 
 export const postAnswers = async (answers) => {
     try {
-        const payload = [...answers, { username }];
-        const response = await api.post('/answers', payload);
+        // Получаем test_id из первого ответа
+        const test_id = answers.length > 0 ? answers[0].test_id : 0;
+
+        // Форматируем ответы в соответствии с требуемой структурой API
+        const payload = {
+            test_id: test_id,
+            answers: answers.map(answer => ({
+                answer_text: answer.answer,
+                time_spent: 0, // Пока нет измерения времени на вопрос
+                question_id: answer.question_id
+            })),
+            total_time: 0 // Пока нет измерения общего времени
+        };
+
+        console.log("Отправка данных в формате:", payload);
+        const response = await api.post(`/api/submissions/${test_id}/submit`, payload);
         return response.data;
     } catch (error) {
         console.error("Error posting answers:", error);
