@@ -41,6 +41,7 @@ baseInstance.interceptors.request.use((config) => {
         config.headers['x-telegram-first-name'] = user.first_name || null;
         config.headers['x-telegram-last-name'] = user.last_name || null;
     }
+
     return config;
 }, (error) => {
     return Promise.reject(error);
