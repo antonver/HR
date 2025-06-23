@@ -22,6 +22,7 @@ const baseInstance = axios.create({
     },
 });
 
+
 // Добавляем interceptor для POST-запросов
 baseInstance.interceptors.request.use((config) => {
     if (config.method === 'post') {
