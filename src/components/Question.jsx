@@ -2,9 +2,9 @@ import { useDispatch, useSelector } from 'react-redux';
 import { addAnswer, clearAnswers } from '../store/slices/answersSlice';
 import { Button, TextField, Box, Typography, CircularProgress } from '@mui/material';
 import { useState, useEffect, useCallback } from 'react';
-import { getQuestionsBack, getQuestionsFront, postAnswers } from '../utils/get_info.js';
-import {useNavigate} from "react-router-dom";
-import {increment} from "../store/slices/counterSlice.js";
+import { getQuestionsBack, getQuestionsFront } from '../utils/get_info.js';
+import { useNavigate } from "react-router-dom";
+import { increment } from "../store/slices/counterSlice.js";
 
 const QuestionPage = () => {
     const dispatch = useDispatch();
@@ -40,6 +40,29 @@ const QuestionPage = () => {
         };
         fetchQuestions();
     }, [typeTest]);
+
+    const saveAnswersToJson = (payload) => {
+        // Создаем объект Blob с JSON данными
+        const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+
+        // Создаем URL для скачивания
+        const url = URL.createObjectURL(blob);
+
+        // Создаем временную ссылку для скачивания файла
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `answers_${typeTest}_${new Date().toISOString().split('T')[0]}.json`;
+
+        // Программно кликаем по ссылке для запуска скачивания
+        document.body.appendChild(a);
+        a.click();
+
+        // Удаляем временную ссылку
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+
+        return true;
+    };
 
     const handleNext = useCallback(async () => {
         if (!questions.length) return;
@@ -90,25 +113,30 @@ const QuestionPage = () => {
                 total_time: updatedAnswers.reduce((sum, ans) => sum + ans.time_spent, 0),
             };
 
-            console.log('Sending answers payload:', JSON.stringify(payload, null, 2));
+            console.log('Сохраняем ответы в JSON:', JSON.stringify(payload, null, 2));
 
             try {
-                await postAnswers(payload);
-                alert('Answers submitted successfully!');
-                dispatch(clearAnswers());
-                setCurrentQuestionIndex(0);
-                dispatch(increment());
-                setQuestions([]);
-                if (count === 1) {
-                    navigate('/backend');
+                // Сохраняем ответы в JSON-файл вместо отправки на сервер
+                const success = saveAnswersToJson(payload);
+
+                if (success) {
+                    alert('Ответы успешно сохранены в JSON!');
+                    dispatch(clearAnswers());
+                    setCurrentQuestionIndex(0);
+                    dispatch(increment());
+                    setQuestions([]);
+                    if (count === 1) {
+                        navigate('/backend');
+                    } else {
+                        navigate('/end');
+                    }
                 }
-                else navigate('/end');
             } catch (error) {
-                console.error('Failed to submit answers:', error);
-                alert('Failed to submit answers.');
+                console.error('Не удалось сохранить ответы:', error);
+                alert('Не удалось сохранить ответы.');
             }
         }
-    }, [currentQuestionIndex, questions, answers, dispatch, timeSpent]);
+    }, [currentQuestionIndex, questions, answers, dispatch, timeSpent, typeTest, count, navigate]);
 
     useEffect(() => {
         const timer = setInterval(() => {
@@ -142,7 +170,7 @@ const QuestionPage = () => {
         return (
             <Box sx={{ display: 'flex', justifyContent: 'center', mt: 5 }}>
                 <CircularProgress color="primary" />
-                <Typography sx={{ ml: 2 }}>Loading questions...</Typography>
+                <Typography sx={{ ml: 2 }}>Загрузка вопросов...</Typography>
             </Box>
         );
     }
@@ -152,7 +180,7 @@ const QuestionPage = () => {
     }
 
     if (!questions || questions.length === 0) {
-        return <Typography color="error">No questions available.</Typography>;
+        return <Typography color="error">Вопросы недоступны.</Typography>;
     }
 
     const currentQuestion = questions[currentQuestionIndex];
@@ -205,7 +233,7 @@ const QuestionPage = () => {
 
             <TextField
                 variant="outlined"
-                placeholder="Enter your answer..."
+                placeholder="Введите ваш ответ..."
                 value={currentAnswer}
                 onChange={handleAnswerChange}
                 multiline
@@ -238,12 +266,12 @@ const QuestionPage = () => {
                     onClick={handleNext}
                     disabled={currentAnswer.trim() === ''}
                 >
-                    {currentQuestionIndex === questions.length - 1 ? 'Finish' : 'Continue'}
+                    {currentQuestionIndex === questions.length - 1 ? 'Finish' : 'Continuuer'}
                 </Button>
             </Box>
 
-            <Typography sx={{ mt: 2 }}>Time remaining: {90 - timeSpent} seconds</Typography>
-            <Typography sx={{ mt: 1 }}>Total time: {totalTimeSpent + timeSpent} seconds</Typography>
+            <Typography sx={{ mt: 2 }}>Оставшееся время: {90 - timeSpent} секунд</Typography>
+            <Typography sx={{ mt: 1 }}>Общее время: {totalTimeSpent + timeSpent} секунд</Typography>
         </Box>
     );
 };

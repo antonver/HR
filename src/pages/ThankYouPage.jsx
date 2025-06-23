@@ -23,10 +23,10 @@ const ThankYouPage = () => {
             }}
         >
             <Typography variant="h4" sx={{ mb: 2 }}>
-                Спасибо за ваше время!
+                End
             </Typography>
             <Typography variant="body1" sx={{ mb: 4, textAlign: 'center', maxWidth: '600px' }}>
-                Мы ценим ваш вклад и надеемся, что вам понравился наш тест. Если у вас есть вопросы или предложения, пожалуйста, свяжитесь с нами.
+                End
             </Typography>
             <Button
                 variant="contained"
@@ -37,7 +37,7 @@ const ThankYouPage = () => {
                 }}
                 onClick={handleGoHome}
             >
-                Вернуться на главную
+                Come Back to Home
             </Button>
         </Box>
     );
